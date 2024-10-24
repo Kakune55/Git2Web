@@ -1,0 +1,5 @@
+{
+  "repo_url": "https://github.com/yourusername/yourrepo.git",
+  "target_path": "./yourrepo",
+  "port": "8080"
+}
