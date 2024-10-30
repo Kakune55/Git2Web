@@ -22,5 +22,4 @@ go.work
 
 repo/
 config.json
-
-config.json
+logs
