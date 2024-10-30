@@ -14,6 +14,7 @@ type Config struct {
 	StaticPath   string `json:"static_path"`
 	LogFilePath  string `json:"log_file_path"`
 	LogMaxSizeMB int    `json:"log_max_size_mb"`
+	RepoAuth     map[string]string `json:"repo_auth"`
 }
 
 func loadConfig(filename string) (*Config, error) {
@@ -27,6 +28,7 @@ func loadConfig(filename string) (*Config, error) {
 			StaticPath:   "./repo",
 			LogFilePath:  "./logs/server.log",
 			LogMaxSizeMB: 5,
+			RepoAuth: map[string]string{"enabled": "false","username": "yourusername","password": "yourpassword"},
 		}
 
 		configData, err := json.MarshalIndent(defaultConfig, "", "  ")

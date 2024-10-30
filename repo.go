@@ -4,13 +4,25 @@ import (
 	"log"
 
 	git "github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing/transport/http"
 )
 
 func cloneRepo(config *Config) error {
-	_, err := git.PlainClone(config.TargetPath, false, &git.CloneOptions{
-		URL: config.RepoURL,
-	})
-	return err
+	if config.RepoAuth["enabled"] == "1" {
+		_, err := git.PlainClone(config.TargetPath, false, &git.CloneOptions{
+			Auth: &http.BasicAuth{
+				Username: config.RepoAuth["username"],
+				Password: config.RepoAuth["password"],
+			},
+			URL: config.RepoURL,
+		})
+		return err
+	} else {
+		_, err := git.PlainClone(config.TargetPath, false, &git.CloneOptions{
+			URL: config.RepoURL,
+		})
+		return err
+	}
 }
 
 func pullRepo(config *Config) error {
