@@ -18,6 +18,11 @@ type Config struct {
 }
 
 func loadConfig(filename string) (*Config, error) {
+	//创建conf目录
+	if _, err := os.Stat("conf"); os.IsNotExist(err) {
+		os.Mkdir("conf", 0755)
+	}
+	filename = "conf/" + filename
 	// 如果配置文件不存在，则创建默认配置
 	if _, err := os.Stat(filename); os.IsNotExist(err) {
 		defaultConfig := Config{
