@@ -33,7 +33,7 @@ func loadConfig(filename string) (*Config, error) {
 			StaticPath:   "./repo",
 			LogFilePath:  "./logs/server.log",
 			LogMaxSizeMB: 5,
-			RepoAuth: map[string]string{"enabled": "false","username": "yourusername","password": "yourpassword"},
+			RepoAuth: map[string]string{"enabled": "0","username": "yourusername","password": "yourpassword"},
 		}
 
 		configData, err := json.MarshalIndent(defaultConfig, "", "  ")
