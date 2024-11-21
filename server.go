@@ -22,7 +22,7 @@ func webhookHandler(config *Config) http.HandlerFunc {
 func serveStaticFiles(staticPath, port string) {
 	fs := http.FileServer(http.Dir(staticPath))
 	http.Handle("/", fs)
-	log.Printf("静态文件服务器监听在端口 %s，提供 %s 的内容", port, staticPath)
+	log.Printf("静态文件服务器监听在端口 %s 提供 %s 的内容", port, staticPath)
 	if err := http.ListenAndServe(":"+port, nil); err != nil {
 		log.Fatalf("启动静态文件服务器时出错: %v", err)
 	}

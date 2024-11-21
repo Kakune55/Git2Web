@@ -15,7 +15,7 @@ func main() {
 ██║   ██║██║   ██║   ██╔═══╝ ██║███╗██║██╔══╝  ██╔══██╗
 ╚██████╔╝██║   ██║   ███████╗╚███╔███╔╝███████╗██████╔╝
  ╚═════╝ ╚═╝   ╚═╝   ╚══════╝ ╚══╝╚══╝ ╚══════╝╚═════╝ 
-	Version: 1.0.0 RC2          
+	Version: 1.1.0
 
 	`
 	fmt.Println(logo)
@@ -33,9 +33,17 @@ func main() {
 
 
 	log.Println("同步自：", config.RepoURL)
-	if config.RepoAuth["enabled"] == "1" {
+	if config.RepoAuth.Enabled {
 		log.Println("已启用身份验证")
+	} else {
+		log.Println("未启用身份验证")
 	}
+
+	if config.LfsEnabled {
+		log.Println("已启用Git LFS")
+	} else {
+		log.Println("未启用Git LFS")
+	}	
 
 	if _, err := os.Stat(config.TargetPath); os.IsNotExist(err) {
 		log.Println("未找到仓库，正在克隆...")
@@ -44,6 +52,7 @@ func main() {
 		}
 	}
 
+	log.Print("正在启动 Web 服务器...")
 	go serveStaticFiles(config.StaticPath, config.StaticPort)
-	 serveWebhook(config)
+	serveWebhook(config)
 }

@@ -21,6 +21,8 @@ COPY --from=builder /app/main .
 
 RUN mkdir -p /root/conf
 
+RUN apk add --no-cache git git-lfs
+
 # 暴露应用的端口
 EXPOSE 8080 8081
 

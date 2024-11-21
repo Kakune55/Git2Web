@@ -6,6 +6,12 @@ import (
 	"os"
 )
 
+type RepoAuthConfig struct {
+	Enabled		bool `json:"enabled"`
+	Email		string `json:"email"`
+	Password	string `json:"password"`
+}
+
 type Config struct {
 	RepoURL      string `json:"repo_url"`
 	TargetPath   string `json:"target_path"`
@@ -14,8 +20,11 @@ type Config struct {
 	StaticPath   string `json:"static_path"`
 	LogFilePath  string `json:"log_file_path"`
 	LogMaxSizeMB int    `json:"log_max_size_mb"`
-	RepoAuth     map[string]string `json:"repo_auth"`
+	RepoAuth     RepoAuthConfig `json:"repo_auth"`
+	LfsEnabled   bool `json:"lfs_enabled"`
 }
+
+
 
 func loadConfig(filename string) (*Config, error) {
 	//创建conf目录
@@ -33,7 +42,12 @@ func loadConfig(filename string) (*Config, error) {
 			StaticPath:   "./repo",
 			LogFilePath:  "./logs/server.log",
 			LogMaxSizeMB: 5,
-			RepoAuth: map[string]string{"enabled": "0","username": "yourusername","password": "yourpassword"},
+			RepoAuth: RepoAuthConfig{
+				Enabled:   false,
+				Email:    "example@example.com",
+				Password: "1234",
+			},
+			LfsEnabled:   false,
 		}
 
 		configData, err := json.MarshalIndent(defaultConfig, "", "  ")
