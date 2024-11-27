@@ -10,6 +10,37 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 )
 
+func getBranchInfo(config *Config) {
+	// 打开当前的 Git 仓库
+	repo, err := git.PlainOpen(config.TargetPath) // 替换为目标仓库路径
+	if err != nil {
+		log.Fatalf("无法打开仓库: %v", err)
+	}
+
+	// 获取当前 HEAD 的引用
+	headRef, err := repo.Head()
+	if err != nil {
+		log.Fatalf("无法获取 HEAD: %v", err)
+	}
+
+	// 输出当前节点的信息
+	log.Printf("当前 HEAD Commit: %s\n", headRef.Hash().String())
+
+	// 判断 HEAD 是否指向分支
+	if headRef.Name().IsBranch() {
+		log.Printf("当前分支: %s\n", headRef.Name().Short())
+	} else {
+		log.Println("当前是一个分离的 HEAD 状态 (Detached HEAD)")
+	}
+
+	commit, err := repo.CommitObject(headRef.Hash())
+	if err != nil {
+		log.Fatalf("无法获取 Commit 对象: %v", err)
+	}
+	log.Printf("当前的提交信息: %s\n", commit.Message)
+}
+
+
 // cloneRepo 克隆仓库
 func cloneRepo(config *Config) error {
 	cloneOptions := &git.CloneOptions{
@@ -39,6 +70,8 @@ func cloneRepo(config *Config) error {
 			return fmt.Errorf("git LFS 拉取失败: %w", err)
 		}
 	}
+	
+	getBranchInfo(config)
 
 	return nil
 }
@@ -90,6 +123,7 @@ func pullRepo(config *Config) error {
     }
 
     log.Println("仓库更新完成")
+	getBranchInfo(config)
 
     return nil
 }

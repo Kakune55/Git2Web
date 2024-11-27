@@ -50,9 +50,14 @@ func main() {
 		if err := cloneRepo(config); err != nil {
 			log.Fatalf("克隆仓库时出错: %v", err)
 		}
+	} else {
+		pullRepo(config) //更新仓库
 	}
+
+	
 
 	log.Print("正在启动 Web 服务器...")
 	go serveStaticFiles(config.StaticPath, config.StaticPort)
-	serveWebhook(config)
+	go serveWebhook(config)
+	select {}
 }
