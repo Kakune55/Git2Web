@@ -1,14 +1,25 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"time"
 )
 
 func webhookHandler(config *Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		log.Println("收到Webhook请求")
+		
+		// 验证请求
+		if !validateWebhook(r, config.WebhookSecret) {
+			http.Error(w, "未授权的请求", http.StatusUnauthorized)
+			log.Println("Webhook 验证失败")
+			return
+		}
+		
 		err := pullRepo(config)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -19,19 +30,52 @@ func webhookHandler(config *Config) http.HandlerFunc {
 	}
 }
 
+// 健康检查端点
+func healthCheckHandler(config *Config) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		info := map[string]interface{}{
+			"status":  "healthy",
+			"version": config.Version,
+			"uptime":  time.Since(startTime).String(),
+			"repo": map[string]string{
+				"url":        config.RepoURL,
+				"targetPath": config.TargetPath,
+			},
+		}
+		
+		// 检查目标目录是否存在
+		_, err := os.Stat(config.TargetPath)
+		info["repoExists"] = err == nil
+		
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(info)
+	}
+}
+
 func serveStaticFiles(staticPath, port string) {
 	fs := http.FileServer(http.Dir(staticPath))
 	http.Handle("/", fs)
-	log.Printf("静态文件服务器监听在端口 %s 提供 %s 的内容", port, staticPath)
 	if err := http.ListenAndServe(":"+port, nil); err != nil {
 		log.Fatalf("启动静态文件服务器时出错: %v", err)
 	}
 }
 
 func serveWebhook(config *Config) {
-	http.HandleFunc("/webhook", webhookHandler(config))
-	log.Printf("Webhook 服务器监听在端口 %s URL 为 /webhook", config.WebhookPort)
-	if err := http.ListenAndServe(":"+config.WebhookPort, nil); err != nil {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/webhook", webhookHandler(config))
+	mux.HandleFunc("/health", healthCheckHandler(config))
+	
+	log.Printf("Webhook 服务: http://IP:%s/webhook", config.WebhookPort)
+	log.Printf("健康检查端点: http://IP:%s/health", config.WebhookPort)
+	
+	server := &http.Server{
+		Addr:         ":" + config.WebhookPort,
+		Handler:      mux,
+		ReadTimeout:  10 * time.Second,
+		WriteTimeout: 10 * time.Second,
+	}
+	
+	if err := server.ListenAndServe(); err != nil {
 		log.Fatalf("启动 Webhook 服务器时出错: %v", err)
 	}
 }
