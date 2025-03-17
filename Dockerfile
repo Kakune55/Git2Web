@@ -19,7 +19,7 @@ WORKDIR /root/
 # 从构建阶段复制二进制文件
 COPY --from=builder /app/main .
 
-RUN apk add --no-cache git git-lfs && rm -rf /var/cache/apk/*
+RUN mkdir -p /root/etc && apk add --no-cache git git-lfs && rm -rf /var/cache/apk/*
 
 # 暴露应用的端口
 EXPOSE 8080 8081
