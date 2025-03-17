@@ -1,4 +1,4 @@
-package main
+package logger
 
 import (
 	"io"
@@ -6,6 +6,8 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+
+	"git2Web/config"
 )
 
 type customLogWriter struct {
@@ -71,7 +73,7 @@ func (w *customLogWriter) rotateLogFile() error {
 	return nil
 }
 
-func initLogging(config *Config) error {
+func InitLogging(config *config.Config) error {
 	if err := os.MkdirAll(filepath.Dir(config.LogFilePath), 0777); err != nil {
 		return err
 	}

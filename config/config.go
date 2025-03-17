@@ -1,4 +1,4 @@
-package main
+package config
 
 import (
 	"encoding/json"
@@ -30,9 +30,9 @@ type Config struct {
 // 应用版本号
 const AppVersion = "1.2.0"
 
-func loadConfig(filename string) (*Config, error) {
+func LoadConfig(filename string) (*Config, error) {
 	// 创建conf目录
-	configDir := "conf"
+	configDir := "etc"
 	if _, err := os.Stat(configDir); os.IsNotExist(err) {
 		if err := os.MkdirAll(configDir, 0755); err != nil {
 			return nil, err
@@ -45,11 +45,11 @@ func loadConfig(filename string) (*Config, error) {
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
 		defaultConfig := Config{
 			RepoURL:       "https://github.com/yourusername/yourrepo.git",
-			TargetPath:    "./repo",
+			TargetPath:    "./data/repo",
 			WebhookPort:   "8081",
 			WebhookSecret: "",  // 默认为空，不启用验证
 			StaticPort:    "8080",
-			StaticPath:    "./repo",
+			StaticPath:    "./data/repo",
 			LogFilePath:   "./logs/server.log",
 			LogMaxSizeMB:  5,
 			RepoAuth: RepoAuthConfig{

@@ -1,4 +1,4 @@
-package main
+package repo
 
 import (
 	"fmt"
@@ -6,11 +6,14 @@ import (
 	"os"
 	"os/exec"
 
+	"git2Web/config"
+
 	git "github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 )
 
-func getBranchInfo(config *Config) {
+// GetBranchInfo 获取当前分支信息
+func GetBranchInfo(config *config.Config) {
 	// 打开当前的 Git 仓库
 	repo, err := git.PlainOpen(config.TargetPath) // 替换为目标仓库路径
 	if err != nil {
@@ -40,9 +43,8 @@ func getBranchInfo(config *Config) {
 	log.Printf("当前的提交信息: %s\n", commit.Message)
 }
 
-
-// cloneRepo 克隆仓库
-func cloneRepo(config *Config) error {
+// CloneRepo 克隆仓库
+func CloneRepo(config *config.Config) error {
 	cloneOptions := &git.CloneOptions{
 		URL: config.RepoURL,
 	}
@@ -71,20 +73,20 @@ func cloneRepo(config *Config) error {
 		}
 	}
 	
-	getBranchInfo(config)
+	GetBranchInfo(config)
 
 	return nil
 }
 
-// pullRepo 拉取更新
-func pullRepo(config *Config) error {
+// PullRepo 拉取更新
+func PullRepo(config *config.Config) error {
     // 如果启用了 LFS，则直接删除现有仓库并重新克隆
     if config.LfsEnabled {
         log.Println("启用 LFS，直接删除现有仓库并重新克隆")
         if err := os.RemoveAll(config.TargetPath); err != nil {
             return fmt.Errorf("删除现有仓库失败: %w", err)
         }
-        return cloneRepo(config)
+        return CloneRepo(config)
     }
 
     // 打开已有的仓库
@@ -123,13 +125,13 @@ func pullRepo(config *Config) error {
     }
 
     log.Println("仓库更新完成")
-	getBranchInfo(config)
+	GetBranchInfo(config)
 
     return nil
 }
 
 // updateGitLFS 使用命令行工具拉取 Git LFS 文件
-func updateGitLFS(targetPath string, config *Config) error {
+func updateGitLFS(targetPath string, config *config.Config) error {
 	log.Println("开始更新 Git LFS 文件")
 	cmd := exec.Command("git", "lfs", "pull")
 	cmd.Dir = targetPath

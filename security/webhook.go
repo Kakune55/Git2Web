@@ -1,4 +1,4 @@
-package main
+package security
 
 import (
 	"crypto/hmac"
@@ -9,8 +9,8 @@ import (
 	"net/http"
 )
 
-// validateWebhook 验证来自 GitHub/GitLab 的 Webhook 请求
-func validateWebhook(r *http.Request, secret string) bool {
+// ValidateWebhook 验证来自 GitHub/GitLab 的 Webhook 请求
+func ValidateWebhook(r *http.Request, secret string) bool {
 	if secret == "" {
 		// 如果未配置 secret，则不进行验证
 		return true

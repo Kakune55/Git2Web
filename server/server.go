@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
 	"encoding/json"
@@ -7,20 +7,30 @@ import (
 	"net/http"
 	"os"
 	"time"
+
+	"git2Web/config"
+	"git2Web/repo"
+	"git2Web/security"
 )
 
-func webhookHandler(config *Config) http.HandlerFunc {
+var StartTime time.Time
+
+func init() {
+	StartTime = time.Now()
+}
+
+func webhookHandler(config *config.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		log.Println("收到Webhook请求")
 		
 		// 验证请求
-		if !validateWebhook(r, config.WebhookSecret) {
+		if !security.ValidateWebhook(r, config.WebhookSecret) {
 			http.Error(w, "未授权的请求", http.StatusUnauthorized)
 			log.Println("Webhook 验证失败")
 			return
 		}
 		
-		err := pullRepo(config)
+		err := repo.PullRepo(config)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			log.Printf("拉取仓库时出错: %v", err)
@@ -31,12 +41,12 @@ func webhookHandler(config *Config) http.HandlerFunc {
 }
 
 // 健康检查端点
-func healthCheckHandler(config *Config) http.HandlerFunc {
+func healthCheckHandler(config *config.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		info := map[string]interface{}{
 			"status":  "healthy",
 			"version": config.Version,
-			"uptime":  time.Since(startTime).String(),
+			"uptime":  time.Since(StartTime).String(),
 			"repo": map[string]string{
 				"url":        config.RepoURL,
 				"targetPath": config.TargetPath,
@@ -52,7 +62,7 @@ func healthCheckHandler(config *Config) http.HandlerFunc {
 	}
 }
 
-func serveStaticFiles(staticPath, port string) {
+func ServeStaticFiles(staticPath, port string) {
 	fs := http.FileServer(http.Dir(staticPath))
 	http.Handle("/", fs)
 	if err := http.ListenAndServe(":"+port, nil); err != nil {
@@ -60,7 +70,7 @@ func serveStaticFiles(staticPath, port string) {
 	}
 }
 
-func serveWebhook(config *Config) {
+func ServeWebhook(config *config.Config) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/webhook", webhookHandler(config))
 	mux.HandleFunc("/health", healthCheckHandler(config))
