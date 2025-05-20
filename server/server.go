@@ -25,6 +25,7 @@ func init() {
 func webhookHandler(config *config.Config, configPath string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		log.Println("收到Webhook请求")
+		updateStartTime := time.Now()
 		
 		// 验证请求
 		if !security.ValidateWebhook(r, config.WebhookSecret) {
@@ -70,7 +71,8 @@ func webhookHandler(config *config.Config, configPath string) http.HandlerFunc {
 			log.Println("重启静态文件服务到新分区")
 			RestartStaticServer(config.GetActiveTargetPath(), config.StaticPort)
 			
-			fmt.Fprintln(w, "仓库成功更新并切换服务到新版本")
+			fmt.Fprintln(w, "仓库成功更新并切换服务到新版本,用时:", time.Since(updateStartTime).String())
+			log.Println("仓库成功更新并切换服务到新版本,用时:", time.Since(updateStartTime).String())
 		} else {
 			// 非 LFS 仓库使用常规更新方式
 			err := repo.PullRepo(config)
@@ -79,7 +81,8 @@ func webhookHandler(config *config.Config, configPath string) http.HandlerFunc {
 				log.Printf("拉取仓库时出错: %v", err)
 				return
 			}
-			fmt.Fprintln(w, "仓库成功更新")
+			fmt.Fprintln(w, "仓库成功更新,用时:", time.Since(updateStartTime).String())
+			log.Println("仓库成功更新,用时:", time.Since(updateStartTime).String())
 		}
 	}
 }

@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strconv"
 )
 
 // AppVersion 应用版本
@@ -35,7 +36,42 @@ type RepoAuth struct {
 	Password string `json:"password"`
 }
 
-// LoadConfig 从文件加载配置
+// getEnv 获取环境变量，若不存在则返回默认值
+func getEnv(key, defaultVal string) string {
+	val := os.Getenv(key)
+	if val == "" {
+		return defaultVal
+	}
+	return val
+}
+
+// getEnvBool 获取布尔类型环境变量
+func getEnvBool(key string, defaultVal bool) bool {
+	val := os.Getenv(key)
+	if val == "" {
+		return defaultVal
+	}
+	b, err := strconv.ParseBool(val)
+	if err != nil {
+		return defaultVal
+	}
+	return b
+}
+
+// getEnvInt 获取整型环境变量
+func getEnvInt(key string, defaultVal int) int {
+	val := os.Getenv(key)
+	if val == "" {
+		return defaultVal
+	}
+	i, err := strconv.Atoi(val)
+	if err != nil {
+		return defaultVal
+	}
+	return i
+}
+
+// LoadConfig 从文件加载配置，若文件不存在则优先用环境变量初始化
 func LoadConfig(filename string) (*Config, error) {
 	// 创建目录
 
@@ -46,26 +82,26 @@ func LoadConfig(filename string) (*Config, error) {
 		}
 	}
 
-	// 如果配置文件不存在，则创建默认配置
+	// 如果配置文件不存在，则创建默认配置（优先读取环境变量）
 	if _, err := os.Stat(filename); os.IsNotExist(err) {
 		defaultConfig := Config{
-			RepoURL:         "https://github.com/yourusername/yourrepo.git",
-			UpdateOnStart:   true,
-			TargetPathA:     "./data/repo_a",
-			TargetPathB:     "./data/repo_b",
-			ActivePartition: "a",
-			WebhookPort:     "8081",
-			WebhookSecret:   "", // 默认为空，不启用验证
-			StaticPort:      "8080",
-			StaticPath:      "./data/repo",
-			LogFilePath:     "./logs/server.log",
-			LogMaxSizeMB:    5,
+			RepoURL:         getEnv("REPO_URL", "https://github.com/yourusername/yourrepo.git"),
+			UpdateOnStart:   getEnvBool("UPDATE_ON_START", true),
+			TargetPathA:     getEnv("TARGET_PATH_A", "./data/repo_a"),
+			TargetPathB:     getEnv("TARGET_PATH_B", "./data/repo_b"),
+			ActivePartition: getEnv("ACTIVE_PARTITION", "a"),
+			WebhookPort:     getEnv("WEBHOOK_PORT", "8081"),
+			WebhookSecret:   getEnv("WEBHOOK_SECRET", ""),
+			StaticPort:      getEnv("STATIC_PORT", "8080"),
+			StaticPath:      getEnv("STATIC_PATH", "./data/repo"),
+			LogFilePath:     getEnv("LOG_FILE_PATH", "./logs/server.log"),
+			LogMaxSizeMB:    getEnvInt("LOG_MAX_SIZE_MB", 5),
 			RepoAuth: RepoAuth{
-				Enabled:  false,
-				Email:    "example@example.com",
-				Password: "1234",
+				Enabled:  getEnvBool("REPO_AUTH_ENABLED", false),
+				Email:    getEnv("REPO_AUTH_EMAIL", "example@example.com"),
+				Password: getEnv("REPO_AUTH_PASSWORD", "1234"),
 			},
-			LfsEnabled: false,
+			LfsEnabled: getEnvBool("LFS_ENABLED", false),
 			Version:    AppVersion,
 		}
 
@@ -77,8 +113,7 @@ func LoadConfig(filename string) (*Config, error) {
 			return nil, err
 		}
 		log.Printf("配置文件已创建: %s", filename)
-		log.Println("程序已退出，请编辑配置文件后重新运行。")
-		os.Exit(0)
+		log.Println("请检查并编辑配置文件后重新运行以生效更改。")
 	}
 
 	file, err := os.ReadFile(filename)
