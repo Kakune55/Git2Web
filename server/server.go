@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -119,9 +120,14 @@ func RestartStaticServer(staticPath, port string) {
 	// 如果服务已存在，先关闭
 	if staticServer != nil {
 		log.Println("正在关闭现有静态文件服务器...")
+
+		// 创建一个带超时的上下文
+		ctx, cancel := context.WithTimeout(context.TODO(), 5*time.Second)
+		defer cancel()
+
 		// 创建一个带超时的上下文用于关闭服务
 		go func() {
-			if err := staticServer.Shutdown(nil); err != nil {
+			if err := staticServer.Shutdown(ctx); err != nil {
 				log.Printf("关闭静态文件服务器时出错: %v", err)
 			}
 		}()

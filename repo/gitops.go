@@ -3,6 +3,7 @@ package repo
 import (
 	"fmt"
 	"log"
+	"net/url"
 	"os"
 	"os/exec"
 
@@ -143,19 +144,53 @@ func PullRepo(config *config.Config) error {
 // updateGitLFS 使用命令行工具拉取 Git LFS 文件
 func updateGitLFS(targetPath string, config *config.Config) error {
 	log.Println("开始更新 Git LFS 文件")
+
+	// 如果需要认证，临时设置带认证信息的远程 URL
+	originURL := config.RepoURL
+	authURL := originURL
+	needRestore := false
+
+	if config.RepoAuth.Enabled {
+		needRestore = true
+		authURL = originURL
+		if len(config.RepoAuth.Email) > 0 && len(config.RepoAuth.Password) > 0 {
+			const prefix = "https://"
+			if len(originURL) > len(prefix) && originURL[:len(prefix)] == prefix {
+				// 对用户名和密码做 URL 编码
+				encodedUser := url.QueryEscape(config.RepoAuth.Email)
+				encodedPass := url.QueryEscape(config.RepoAuth.Password)
+				authURL = fmt.Sprintf("https://%s:%s@%s", encodedUser, encodedPass, originURL[len(prefix):])
+			}
+		}
+		// 设置远程 URL
+		cmdSet := exec.Command("git", "remote", "set-url", "origin", authURL)
+		cmdSet.Dir = targetPath
+		if output, err := cmdSet.CombinedOutput(); err != nil {
+			return fmt.Errorf("设置带认证信息的远程 URL 失败: %s, 错误信息: %s", err, string(output))
+		}
+	}
+
+	// 执行 git lfs pull
 	cmd := exec.Command("git", "lfs", "pull")
 	cmd.Dir = targetPath
-
-	// 设置环境变量以传递认证信息
-	if config.RepoAuth.Enabled {
-		cmd.Env = append(cmd.Env, fmt.Sprintf("GIT_USERNAME=%s", config.RepoAuth.Email))
-		cmd.Env = append(cmd.Env, fmt.Sprintf("GIT_PASSWORD=%s", config.RepoAuth.Password))
-	}
-
 	output, err := cmd.CombinedOutput()
 	if err != nil {
+		// 恢复远程 URL
+		if needRestore {
+			cmdRestore := exec.Command("git", "remote", "set-url", "origin", originURL)
+			cmdRestore.Dir = targetPath
+			cmdRestore.CombinedOutput()
+		}
 		return fmt.Errorf("git LFS 更新失败: %s, 错误信息: %s", err, string(output))
 	}
+
+	// 恢复远程 URL
+	if needRestore {
+		cmdRestore := exec.Command("git", "remote", "set-url", "origin", originURL)
+		cmdRestore.Dir = targetPath
+		cmdRestore.CombinedOutput()
+	}
+
 	log.Println("Git LFS 更新完成")
 	return nil
 }
