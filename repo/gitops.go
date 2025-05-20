@@ -41,7 +41,7 @@ func GetBranchInfo(repoPath string) {
 	if err != nil {
 		log.Fatalf("无法获取 Commit 对象: %v", err)
 	}
-	log.Printf("当前的提交信息: %s\n", commit.Message)
+	log.Printf("当前的提交信息: %s", commit.Message)
 }
 
 // CloneRepo 克隆仓库到默认路径

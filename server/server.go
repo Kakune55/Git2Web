@@ -25,7 +25,7 @@ func init() {
 
 func webhookHandler(config *config.Config, configPath string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		log.Println("收到Webhook请求")
+		log.Println("\n----------\n收到Webhook请求")
 		updateStartTime := time.Now()
 		
 		// 验证请求
