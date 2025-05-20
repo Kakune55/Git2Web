@@ -13,9 +13,9 @@ import (
 )
 
 // GetBranchInfo 获取当前分支信息
-func GetBranchInfo(config *config.Config) {
+func GetBranchInfo(repoPath string) {
 	// 打开当前的 Git 仓库
-	repo, err := git.PlainOpen(config.TargetPath) // 替换为目标仓库路径
+	repo, err := git.PlainOpen(repoPath)
 	if err != nil {
 		log.Fatalf("无法打开仓库: %v", err)
 	}
@@ -43,8 +43,13 @@ func GetBranchInfo(config *config.Config) {
 	log.Printf("当前的提交信息: %s\n", commit.Message)
 }
 
-// CloneRepo 克隆仓库
+// CloneRepo 克隆仓库到默认路径
 func CloneRepo(config *config.Config) error {
+	return CloneRepoToPath(config, config.GetActiveTargetPath())
+}
+
+// CloneRepoToPath 克隆仓库到指定路径
+func CloneRepoToPath(config *config.Config, targetPath string) error {
 	cloneOptions := &git.CloneOptions{
 		URL: config.RepoURL,
 	}
@@ -57,9 +62,14 @@ func CloneRepo(config *config.Config) error {
 		}
 	}
 
+	// 确保目标路径存在
+	if err := os.MkdirAll(targetPath, 0755); err != nil {
+		return fmt.Errorf("创建目标目录失败: %w", err)
+	}
+
 	// 克隆仓库
-	log.Printf("开始克隆仓库: %s 到路径: %s", config.RepoURL, config.TargetPath)
-	_, err := git.PlainClone(config.TargetPath, false, cloneOptions)
+	log.Printf("开始克隆仓库: %s 到路径: %s", config.RepoURL, targetPath)
+	_, err := git.PlainClone(targetPath, false, cloneOptions)
 	if err != nil {
 		return fmt.Errorf("克隆仓库失败: %w", err)
 	}
@@ -68,29 +78,29 @@ func CloneRepo(config *config.Config) error {
 
 	// 如果启用了 LFS，执行 LFS 拉取
 	if config.LfsEnabled {
-		if err := updateGitLFS(config.TargetPath, config); err != nil {
+		if err := updateGitLFS(targetPath, config); err != nil {
 			return fmt.Errorf("git LFS 拉取失败: %w", err)
 		}
 	}
 	
-	GetBranchInfo(config)
+	GetBranchInfo(targetPath)
 
 	return nil
 }
 
 // PullRepo 拉取更新
 func PullRepo(config *config.Config) error {
-    // 如果启用了 LFS，则直接删除现有仓库并重新克隆
+    targetPath := config.GetActiveTargetPath()
+    
+    // 如果启用了 LFS，可以在这里处理 AB 分区策略
+    // 但实际实现在 server 包中的 webhookHandler 中
     if config.LfsEnabled {
-        log.Println("启用 LFS，直接删除现有仓库并重新克隆")
-        if err := os.RemoveAll(config.TargetPath); err != nil {
-            return fmt.Errorf("删除现有仓库失败: %w", err)
-        }
-        return CloneRepo(config)
+        log.Println("已启用 LFS 和 AB 分区策略，通过 webhook 处理...")
+        return nil
     }
 
     // 打开已有的仓库
-    repo, err := git.PlainOpen(config.TargetPath)
+    repo, err := git.PlainOpen(targetPath)
     if err != nil {
         return fmt.Errorf("打开仓库失败: %w", err)
     }
@@ -125,7 +135,7 @@ func PullRepo(config *config.Config) error {
     }
 
     log.Println("仓库更新完成")
-	GetBranchInfo(config)
+	GetBranchInfo(targetPath)
 
     return nil
 }
